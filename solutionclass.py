@@ -8,6 +8,23 @@ from selenium.webdriver.chrome.options import Options
 
 path = 'C:\Program Files (x86)\Google\Chrome\Application\chromedriver.exe'
 
+def savePath(_path):
+    try:
+        f = open('pathway.txt', 'w')
+        f.write(_path)
+        f.close()
+    except:
+        raise (MyError('保存浏览器驱动路径失败!'))
+
+def readPath():
+    try:
+        f = open('pathway.txt', 'r')
+        _path = f.readline()
+        f.close()
+        return _path
+    except:
+        raise (MyError('读取浏览器驱动路径失败!'))
+
 class MyError(Exception):
     def __init__(self, value):
         self.value = value
@@ -48,14 +65,14 @@ class Solution:
                 options.headless = False
             self.driver = webdriver.Chrome(options=options, executable_path=path)
         except:
-            raise(MyError('initialize error'))
+            raise(MyError('初始化失败!'))
 
     def geturl(self):
         try:
-            url = "https://tjxx.lnu.edu.cn"
+            url = "http://tjxx.lnu.edu.cn/inputExt.asp"
             self.driver.get(url)
         except:
-            raise(MyError('fail to connect website'))
+            raise(MyError('链接至填报网站失败!'))
 
     def finish(self):
         try:
@@ -77,7 +94,7 @@ class Solution:
             self.driver.find_element_by_xpath(self.confirmsubmit).click()
             time.sleep(1)
         except:
-            raise(MyError('fail to finish upload'))
+            raise(MyError('未能成功提交填报,请在填报时段再试!'))
 
     def savecookie(self):
         pickle.dump(self.driver.get_cookies(), open("cookies.pkl", "wb"))
@@ -88,7 +105,14 @@ class Solution:
             for cookie in cookies:
                 self.driver.add_cookie(cookie)
         except:
-            raise(MyError('read Cookie error'))
+            raise (MyError('读取Cookie错误!'))
+
+    def confirmCookie(self):
+        time.sleep(1)
+        try:
+            _temp = self.driver.find_element_by_xpath(self.liudong0)
+        except:
+            raise MyError('未能成功以Cookie登入')
 
     def do(self):
         try:
@@ -96,22 +120,39 @@ class Solution:
             self.geturl()
             self.readcookie()
             self.geturl()
+            self.confirmCookie()
 
             # input imf
             self.finish()
             self.savecookie()
             self.driver.close()
 
-            print('success')
-        except MyError as me:
-            print(me.value)
+            print('填报成功')
+        except MyError as _er:
+            print(_er.value)
+            self.driver.close()
+            print('自动关闭浏览器,等待状态中...')
+
+    def subDo(self):
+            # use cookie to login
+            self.geturl()
+            self.readcookie()
+            self.geturl()
+            self.confirmCookie()
+
+            # input imf
+            self.finish()
+            self.savecookie()
+            self.driver.close()
 
 if __name__ == '__main__':
+    sol = Solution(path, False)
+    sol.do()
     while True:
         recenttime = int(datetime.datetime.now().strftime('%H%M'))
-        if 700 < recenttime < 800:
-            sol = Solution(path, True)
+        if 700 < recenttime < 900:
+            sol = Solution(path, False)
             sol.do()
-            time.sleep(23*60)
+            time.sleep(10*60*60)
         else:
             time.sleep(600)
