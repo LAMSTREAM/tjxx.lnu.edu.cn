@@ -12,12 +12,12 @@ pool_2 = vthread.pool(1,gqueue=2)
 
 @pool_1
 def warningthread(_text):
-    pyautogui.alert(_text)
+    pyautogui.alert(_text, title='lyns')
 
 @pool_2
 def yesmain():
     while 1:
-        workingMode = pyautogui.confirm(text='选择工作模式', title='lyns', buttons=['配置', '开始'])
+        workingMode = pyautogui.confirm(text='选择工作模式', title='lyns', buttons=['配置', '开始', '待机'])
         if(workingMode == "配置"):
             try:
                 try:
@@ -47,21 +47,53 @@ def yesmain():
                 sol.subDo()
                 warningthread('填报成功！ 待机等待下一次填报....')
             except MyError as _er:
-                sol.driver.close()
-                warningthread(_er.value+'  \n返回配置状态...')
-                continue
+                if(_er.value == '当日填报结束'):
+                    warningthread(_er.value + '  \n自动进入待机状态...')
+                    sol.driver.close()
+                else:
+                    warningthread(_er.value+'  \n返回配置状态...')
+                    sol.driver.close()
+                    continue
             while 1:
                 recenttime = int(datetime.datetime.now().strftime('%H%M'))
-                if 700 < recenttime < 900:
+                if (700 < recenttime < 900):
                     try:
                         sol = Solution(workingPath, False)
                         sol.subDo()
                         time.sleep(10 * 60 * 60)
                         warningthread('填报成功！ 待机等待下一次填报....')
                     except MyError as _er:
-                        sol.driver.close()
-                        warningthread(_er.value+'  \n返回配置状态...')
-                        break
+                        if (_er.value == '当日填报结束'):
+                            warningthread(_er.value + '  \n自动进入待机状态...')
+                            sol.driver.close()
+                            time.sleep(600)
+                        else:
+                            warningthread(_er.value + '  \n返回配置状态...')
+                            sol.driver.close()
+                            break
+
+                else:
+                    time.sleep(600)
+        elif(workingMode == "待机"):
+            while 1:
+                hour = datetime.datetime.now().hour
+                minute = datetime.datetime.now().minute
+                recenttime = hour*100 + minute
+                if (700 < recenttime < 900):
+                    try:
+                        sol = Solution(workingPath, False)
+                        sol.subDo()
+                        time.sleep(10 * 60 * 60)
+                        warningthread('填报成功！ 待机等待下一次填报....')
+                    except MyError as _er:
+                        if (_er.value == '当日填报结束'):
+                            sol.driver.close()
+                            warningthread(_er.value + '  \n自动进入待机状态...')
+                            time.sleep(600)
+                        else:
+                            sol.driver.close()
+                            warningthread(_er.value + '  \n返回配置状态...')
+                            break
 
                 else:
                     time.sleep(600)
@@ -69,4 +101,5 @@ def yesmain():
             pass
         break
 
-for i in  range(1):yesmain()
+if __name__ == '__main__':
+    yesmain()
